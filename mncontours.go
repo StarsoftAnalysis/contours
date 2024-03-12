@@ -12,12 +12,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
-/* For now, points are just integer indexs into Pix
 type PointT struct {
 	x int
 	y int
 }
 
+/* For now, points are just integer indexs into Pix
 func (p PointT) Equal(p2 PointT) bool {
 	return p.x == p2.x && p.y == p2.y
 }
@@ -41,6 +41,10 @@ type OptsT struct {
 }
 
 var opts OptsT
+
+const white = 0xff
+const black = 0x00
+const threshold = 0x7f
 
 // Relative neighbours
 //
@@ -100,7 +104,7 @@ var relNeighbours = []PointT{
 // also returns the next point to be visited.
 /*
 func getValue(img *image.NRGBA, p PointT, idx int) (bool, PointT) {
-	const threshold int = 128 // tunable
+	const threshold int = threshold // tunable
 	var p2 PointT
 	p2.x = p.x + relNeighbours[idx].x
 	p2.y = p.y + relNeighbours[idx].y
@@ -119,7 +123,7 @@ func getValue(img *image.NRGBA, p PointT, idx int) (bool, PointT) {
 */
 /*
 func getValue(img *image.NRGBA, p PointT) bool {
-	const threshold int = 128 //  FIXME tunable
+	const threshold int = threshold //  FIXME tunable
 	if p.x < 0 || p.y < 0 || p.x >= opts.width || p.y >= opts.height {
 		// off the edge
 		return false
@@ -226,11 +230,11 @@ func wrongcontourFinder(img *image.NRGBA) []ContourT {
 	for x := 0; x < opts.width; x++ {
 		fmt.Printf("cF: starting row %v\n", x)
 		for y := 0; y < opts.width; y++ {
-			//if(imageData.data[i * 4] > 128) {
-			// if img.At(x, y) > 128 { // FIXME we seem to be doing this use of threshold twice
+			//if(imageData.data[i * 4] > threshold) {
+			// if img.At(x, y) > threshold { // FIXME we seem to be doing this use of threshold twice
 			c := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
 			fmt.Printf("cF: c at %v,%v is %#v\n", x, y, c)
-			if int(c.R) < 128 {
+			if int(c.R) < threshold {
 				if seen[x][y] || skipping {
 					fmt.Printf("cF: skipping %v,%v\n", x, y)
 					skipping = true
@@ -253,6 +257,104 @@ func wrongcontourFinder(img *image.NRGBA) []ContourT {
 }
 */
 
+func offset(array []int, by int) []int {
+	array2 := make([]int, len(array))
+	//  array.map( (_v, i) => array[(i + by) % array.length])
+	for i := range array {
+		array2[i] = array[(i+by)%len(array)]
+	}
+	return array2
+}
+
+// List of neighbours to visit, in clockwise order from
+func Xneighbours(image *image.NRGBA, width int, i, start int) [8]int {
+	w := width
+	/* ?
+	// convert to x,y
+	x := i % w
+	y := i - (w * x)
+	list := [8]int	// initialised to 0 == black
+	offEdge := [8]int	// initialised to false
+	if x < 0 || y < 0 || x >= width || y >= width {
+	*/
+	var mask [8]int
+	if (i % w) == 0 {
+		mask[0] = -1 // left edge
+		mask[6] = -1
+		mask[7] = -1
+	} else {
+		mask[0] = i - w - 1 // goes negative for first row
+		mask[6] = i + w - 1
+		mask[7] = i - 1
+	}
+	if ((i + 1) % w) == 0 { // right edge
+		mask[2] = -1
+		mask[3] = -1
+		mask[4] = -1
+	} else {
+		mask[2] = i - w + 1
+		mask[3] = i + 1
+		mask[4] = i + w + 1
+	}
+	mask[1] = i - w
+	mask[5] = i + w
+	// hack - vertical edging matters less because
+	// it will get ignored by matching it to the source
+	// +-------+-------+-------+
+	// | i-w-1 |  i-w  | i-w+1 |
+	// +-------+-------+-------+
+	// |  i-1  |   i   |  i+1  |
+	// +-------+-------+-------+
+	// | i+w-1 |  i+w  | i+w+1 |
+	// +-------+-------+-------+
+	//return offset([]int{
+	//	mask[0] || i-w-1,
+	//	mask[1] || i-w,
+	//	mask[2] || i-w+1,
+	//	mask[3] || i+1,
+	//	mask[4] || i+w+1,
+	//	mask[5] || i+w,
+	//	mask[6] || i+w-1,
+	//	mask[7] || i-1,
+	//}, start)
+	return mask
+}
+
+// Get the pixel value (0..255) at the given offset into the image
+func getPix(imageData *image.NRGBA, i int) int {
+	return int(imageData.Pix[i*4]) // For now, just get the red part of the RGBA
+}
+
+var neighbourOffset = [8]PointT{
+	{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0},
+}
+
+// Return a flag for each of 8 neighbours, set to true if the pixel is dark, i.e. within the shape.
+// The neighbours are ordered like this (with y increasing downwards):
+//
+//	0  1  2
+//	7     3
+//	6  5  4
+//
+// Cells that are off the edge of the image are returned as false.
+func neighboursWithin(imageData *image.NRGBA, width int, p int) ([8]int, [8]bool) {
+	var neighbours [8]int
+	var within [8]bool // initialised to false
+	for i := 0; i < 8; i++ {
+		neighbour := p + neighbourOffset[i].x + neighbourOffset[i].y*width
+		// convert to x,y
+		x := neighbour % width
+		y := neighbour / width // integer division
+		// check we're not off the edge of the image
+		if x >= 0 && x < width && y >= 0 && y < width {
+			within[i] = (getPix(imageData, neighbour) < threshold)
+		}
+		neighbours[i] = neighbour
+	}
+	fmt.Printf("nW returning %v\n", within)
+	return neighbours, within
+}
+
 func traceContour(imageData *image.NRGBA, width int, imageLen int, i int) ContourT {
 	start := i
 	contour := make(ContourT, 1, 10)
@@ -261,7 +363,8 @@ func traceContour(imageData *image.NRGBA, width int, imageLen int, i int) Contou
 	p := start
 	fmt.Printf("\ntC: start=%v\n", start)
 	for true {
-		n := neighbours(imageData, width, p, 0)
+		//n := Xneighbours(imageData, width, p, 0)
+		neighbours, withins := neighboursWithin(imageData, width, p)
 		// find the first neighbour starting from
 		// the direction we came from
 		var offset int = direction - 3 + 8
@@ -276,23 +379,29 @@ func traceContour(imageData *image.NRGBA, width int, imageLen int, i int) Contou
 		     4      0
 		     3  2   1
 		*/
-		direction = -1
-		idx := 0
+		//direction = -1
+		nextP := -1
+		//idx := 0
 		for i := 0; i < 8; i++ {
-			idx = (i + offset) % 8
-			neighbour := n[idx]
-			fmt.Printf("tC loop: p=%v n=%v  offset=%v idx=%v n[idx]=%v\n", p, n, offset, idx, n[idx])
-			if neighbour >= 0 && neighbour < imageLen && imageData.Pix[neighbour*4] < 128 { // > 0 { // > 128?
+			idx := (i + offset) % 8
+			//neighbour := neighbours[idx] // n[idx]
+			within := withins[idx]
+			//fmt.Printf("tC loop: p=%v n=%v  offset=%v idx=%v n[idx]=%v\n", p, n, offset, idx, n[idx])
+			fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
+			//if neighbour >= 0 && neighbour < imageLen && imageData.Pix[neighbour*4] < threshold { // > 0 { // > threshold?
+			if within {
 				direction = idx
-				fmt.Printf("tC: breaking with direction=%v neighbour=%v\n", direction, neighbour)
+				nextP = neighbours[idx]
+				//fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
+				fmt.Printf("tC: breaking with nextP=%v\n", nextP)
 				break
 			}
 		}
-		if direction == -1 {
+		if nextP == -1 {
 			fmt.Printf("tC: !!!!!!!! finished loop without breaking\n")
 		}
-		fmt.Printf("tC: old p=%v  direction=%v  newp=%v\n", p, direction, n[direction])
-		p = n[direction]
+		fmt.Printf("tC: old p=%v  nextP=%v\n", p, nextP)
+		p = nextP                  // neighbours[direction]
 		if p == start || p == -1 { //?? || (p != 0) {	//!p {
 			break
 		} else {
@@ -302,63 +411,15 @@ func traceContour(imageData *image.NRGBA, width int, imageLen int, i int) Contou
 	return contour
 }
 
-// list of neighbours to visit
-func neighbours(image *image.NRGBA, width int, i, start int) []int {
-	w := width
-	mask := make([]int, 8)
-	if (i % w) == 0 {
-		mask[0] = -1
-		mask[6] = -1
-		mask[7] = -1
-	} else {
-		mask[0] = i - w - 1
-		mask[6] = i + w - 1
-		mask[7] = i - 1
-	}
-	if ((i + 1) % w) == 0 {
-		mask[2] = -1
-		mask[3] = -1
-		mask[4] = -1
-	} else {
-		mask[2] = i - w + 1
-		mask[3] = i + 1
-		mask[4] = i + w + 1
-	}
-	mask[1] = i - w
-	mask[5] = i + w
-	// hack - vertical edging matters less because
-	// it will get ignored by matching it to the source
-	//return offset([]int{
-	//	mask[0] || i-w-1,
-	//	mask[1] || i-w,
-	//	mask[2] || i-w+1,
-	//	mask[3] || i+1,
-	//	mask[4] || i+w+1,
-	//	mask[5] || i+w,
-	//	mask[6] || i+w-1,
-	//	mask[7] || i-1,
-	//}, start)
-	return mask
-}
-
-func offset(array []int, by int) []int {
-	array2 := make([]int, len(array))
-	//  array.map( (_v, i) => array[(i + by) % array.length])
-	for i := range array {
-		array2[i] = array[(i+by)%len(array)]
-	}
-	return array2
-}
-
 func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
 	var contours = make([]ContourT, 1, 10)
 	var imageLen = width * height
 	seen := make([]bool, imageLen)
 	var skipping = false
 	for i := 0; i < imageLen; i++ {
-		//if(imageData.data[i * 4] > 128) {
+		//if(imageData.data[i * 4] > threshold) {
 		// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4].
-		if imageData.Pix[i*4] < 128 { // just get R
+		if imageData.Pix[i*4] < threshold { // just get R
 			if seen[i] || skipping {
 				skipping = true
 			} else {
