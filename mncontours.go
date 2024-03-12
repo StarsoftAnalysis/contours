@@ -32,6 +32,17 @@ func (p PointT) Minus(p2 PointT) PointT {
 */
 
 type ContourT []int // PointT
+func (c1 ContourT) Equals(c2 ContourT) bool {
+	if len(c1) != len(c2) {
+		return false
+	}
+	for i, c1i := range c1 {
+		if c1i != c2[i] {
+			return false
+		}
+	}
+	return true
+}
 
 // Options and derived things
 type OptsT struct {
@@ -355,13 +366,12 @@ func neighboursWithin(imageData *image.NRGBA, width int, p int) ([8]int, [8]bool
 	return neighbours, within
 }
 
-func traceContour(imageData *image.NRGBA, width int, imageLen int, i int) ContourT {
-	start := i
+func traceContour(imageData *image.NRGBA, width int, start int) ContourT {
 	contour := make(ContourT, 1, 10)
 	contour[0] = start
 	var direction int = 3
 	p := start
-	fmt.Printf("\ntC: start=%v\n", start)
+	fmt.Printf("\ntC: width=%v start=%v\n", width, start)
 	for true {
 		//n := Xneighbours(imageData, width, p, 0)
 		neighbours, withins := neighboursWithin(imageData, width, p)
@@ -423,7 +433,7 @@ func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
 			if seen[i] || skipping {
 				skipping = true
 			} else {
-				var contour = traceContour(imageData, width, imageLen, i)
+				var contour = traceContour(imageData, width, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
 				//contour.forEach(c => {
