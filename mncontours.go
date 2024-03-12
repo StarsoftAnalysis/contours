@@ -77,18 +77,65 @@ func neighboursWithin(imageData *image.NRGBA, width int, p int) ([8]int, [8]bool
 		}
 		neighbours[i] = neighbour
 	}
-	fmt.Printf("nW returning %v\n", within)
+	//fmt.Printf("nW returning %v\n", within)
 	return neighbours, within
 }
 
-func traceContour(imageData *image.NRGBA, width int, start int) ContourT {
+// Properly x,y version:
+func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]int, [8]bool) {
+	var neighbours [8]int
+	var within [8]bool = [8]bool{true, true, true, true, true, true, true, true}
+	px := p % width
+	py := p / width
+	if px == 0 {
+		// turn off left edge
+		within[0] = false
+		within[7] = false
+		within[6] = false
+	}
+	if px == width-1 {
+		// turn off right edge
+		within[2] = false
+		within[3] = false
+		within[4] = false
+	}
+	if py == 0 {
+		// turn off top edge
+		within[0] = false
+		within[1] = false
+		within[2] = false
+	}
+	if px == height-1 {
+		// turn off bottom edge
+		within[6] = false
+		within[5] = false
+		within[4] = false
+	}
+	for i := 0; i < 8; i++ {
+		neighbour := p + neighbourOffset[i].x + neighbourOffset[i].y*width
+		// convert to x,y
+		nx := neighbour % width
+		ny := neighbour / width // integer division
+		// check we're not off the edge of the image
+		if nx >= 0 && nx < width && ny >= 0 && ny < height {
+			if getPix(imageData, neighbour) >= threshold {
+				within[i] = false
+			}
+		}
+		neighbours[i] = neighbour // even if it's off the edge
+	}
+	fmt.Printf("nW p=%v returning %v %v\n", p, neighbours, within)
+	return neighbours, within
+}
+
+func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT {
 	contour := make(ContourT, 1, 10)
 	contour[0] = start
 	var direction int = 3
 	p := start
-	fmt.Printf("\ntC: width=%v start=%v\n", width, start)
+	//fmt.Printf("\ntC: width=%v start=%v\n", width, start)
 	for true {
-		neighbours, withins := neighboursWithin(imageData, width, p)
+		neighbours, withins := neighboursWithinXY(imageData, width, height, p)
 		// find the first neighbour starting from
 		// the direction we came from
 		var offset int = direction - 3 + 8
@@ -108,13 +155,11 @@ func traceContour(imageData *image.NRGBA, width int, start int) ContourT {
 		for i := 0; i < 8; i++ {
 			idx := (i + offset) % 8
 			within := withins[idx]
-			//fmt.Printf("tC loop: p=%v n=%v  offset=%v idx=%v n[idx]=%v\n", p, n, offset, idx, n[idx])
 			fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
 			if within {
 				direction = idx
 				nextP = neighbours[idx]
-				//fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
-				fmt.Printf("tC: breaking with nextP=%v\n", nextP)
+				fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
 				break
 			}
 		}
@@ -142,10 +187,10 @@ func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
 			if seen[i] || skipping {
 				skipping = true
 			} else {
-				var contour = traceContour(imageData, width, i)
+				var contour = traceContour(imageData, width, height, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
-				fmt.Printf("cF: got contour %v\n", contour)
+				//fmt.Printf("cF: got contour %v\n", contour)
 				for _, c := range contour {
 					seen[c] = true
 				}

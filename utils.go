@@ -34,7 +34,7 @@ func ImageToNRGBA(img image.Image) *image.NRGBA {
 	srcBounds := img.Bounds()
 	if srcBounds.Min.X == 0 && srcBounds.Min.Y == 0 {
 		if src0, ok := img.(*image.NRGBA); ok {
-			fmt.Println("ITNRGBA: simple conversion")
+			//fmt.Println("ITNRGBA: simple conversion")
 			return src0
 		}
 	}
