@@ -17,7 +17,7 @@ func TestTraceContour(t *testing.T) {
 	testdata := []testdataT{
 		{"examples/test0.png", ContourT{5, 6, 10, 9}, 5},
 		{"examples/test1.png", ContourT{6, 7, 8, 12, 16, 11}, 6},
-		{"examples/test4.png", ContourT{5, 6, 10, 9}, 2},
+		{"examples/test4.png", ContourT{1, 8, 14, 19, 12, 6}, 1},
 	}
 
 	for _, td := range testdata {
@@ -42,10 +42,10 @@ func TestContourFinder(t *testing.T) {
 	testdata := []testdataT{
 		{"examples/test0.png", []ContourT{{5, 6, 10, 9}}, 1},
 		{"examples/test1.png", []ContourT{{6, 7, 8, 12, 16, 11}}, 1},
-		//{"examples/test2.png", []ContourT{{0, 1, 4}, {11, 15, 14}}, 2},
-		//{"examples/test3.png", []ContourT{{1, 2, 10, 17, 16, 23, 32, 33, 34, 27, 20, 12, 4, 5, 6, 7, 8}, {15, 6, 5, 12, 20, 27, 34, 33, 40, 48, 57, 58, 59, 60, 61, 62, 55, 47, 39, 31, 23}, {37, 45, 44}}, 3},
-		{"examples/test4.png", []ContourT{{5, 6, 10, 9}}, 1},
-		//{"examples/example.jpg", nil, 13},
+		{"examples/test2.png", []ContourT{{0, 1, 4}, {11, 15, 14}}, 2},
+		{"examples/test3.png", []ContourT{{1, 2, 10, 17, 16, 8}, {4, 5, 6, 7, 15, 23, 31, 39, 47, 55, 63, 62, 61, 60, 59, 58, 57, 56, 48, 40, 32, 33, 34, 27, 20, 12}, {37, 45, 44}}, 3},
+		{"examples/test4.png", []ContourT{{1, 8, 14, 19, 12, 6}, {4, 5, 11, 10}, {22}}, 3},
+		{"examples/example.jpg", nil, 13},
 	}
 	for _, td := range testdata {
 		img, width, height, err := loadImage(td.infile)

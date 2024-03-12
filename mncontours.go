@@ -63,24 +63,6 @@ var neighbourOffset = [8]PointT{
 //	6  5  4
 //
 // Cells that are off the edge of the image are returned as false.
-func neighboursWithin(imageData *image.NRGBA, width int, p int) ([8]int, [8]bool) {
-	var neighbours [8]int
-	var within [8]bool // initialised to false
-	for i := 0; i < 8; i++ {
-		neighbour := p + neighbourOffset[i].x + neighbourOffset[i].y*width
-		// convert to x,y
-		x := neighbour % width
-		y := neighbour / width // integer division
-		// check we're not off the edge of the image
-		if x >= 0 && x < width && y >= 0 && y < width {
-			within[i] = (getPix(imageData, neighbour) < threshold)
-		}
-		neighbours[i] = neighbour
-	}
-	//fmt.Printf("nW returning %v\n", within)
-	return neighbours, within
-}
-
 // Properly x,y version:
 func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]int, [8]bool) {
 	var neighbours [8]int
@@ -105,7 +87,7 @@ func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]in
 		within[1] = false
 		within[2] = false
 	}
-	if px == height-1 {
+	if py == height-1 {
 		// turn off bottom edge
 		within[6] = false
 		within[5] = false
@@ -116,6 +98,7 @@ func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]in
 		// convert to x,y
 		nx := neighbour % width
 		ny := neighbour / width // integer division
+		//fmt.Printf("nWXY new neighbour p=%v offset=%v width=%v neighbour=%v nx=%v ny=%v\n", p, neighbourOffset[i], width, neighbour, nx, ny)
 		// check we're not off the edge of the image
 		if nx >= 0 && nx < width && ny >= 0 && ny < height {
 			if getPix(imageData, neighbour) >= threshold {
@@ -124,7 +107,7 @@ func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]in
 		}
 		neighbours[i] = neighbour // even if it's off the edge
 	}
-	fmt.Printf("nW p=%v returning %v %v\n", p, neighbours, within)
+	//fmt.Printf("nWXY p=%v returning %v %v\n", p, neighbours, within)
 	return neighbours, within
 }
 
@@ -141,32 +124,33 @@ func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT
 		var offset int = direction - 3 + 8
 		/*
 		   directions:
-		     0   1   2
-		     7       3
-		     6   5   4
-
-		   start indexes:
-		     5  6   7
-		     4      0
-		     3  2   1
+		     0  1  2
+		     7     3
+		     6  5  4
+		   start indexes: -- is this what the -3 is for?
+		     5  6  7
+		     4     0
+		     3  2  1
 		*/
 		nextP := -1
-		//idx := 0
 		for i := 0; i < 8; i++ {
 			idx := (i + offset) % 8
 			within := withins[idx]
-			fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
+			//fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
 			if within {
 				direction = idx
 				nextP = neighbours[idx]
-				fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
+				//fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
 				break
 			}
+		}
+		if nextP > width*height {
+			panic("p's out of range")
 		}
 		if nextP == -1 {
 			fmt.Printf("tC: !!!!!!!! finished loop without breaking\n")
 		}
-		fmt.Printf("tC: old p=%v  nextP=%v\n", p, nextP)
+		//fmt.Printf("tC: old p=%v  nextP=%v\n", p, nextP)
 		p = nextP
 		if p == start || p == -1 {
 			break
