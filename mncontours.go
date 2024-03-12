@@ -148,7 +148,11 @@ func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT
 			panic("p's out of range")
 		}
 		if nextP == -1 {
-			fmt.Printf("tC: !!!!!!!! finished loop without breaking\n")
+			// That's normal for a one-pixel shape
+			if len(contour) > 1 {
+				fmt.Printf("tC: !!!!!!!! finished loop without breaking\n")
+				fmt.Printf("             p=%v nextP=%v contour=%v\n", p, nextP, contour)
+			}
 		}
 		//fmt.Printf("tC: old p=%v  nextP=%v\n", p, nextP)
 		p = nextP
