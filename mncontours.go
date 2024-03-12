@@ -32,17 +32,6 @@ func (p PointT) Minus(p2 PointT) PointT {
 */
 
 type ContourT []int // PointT
-func (c1 ContourT) Equals(c2 ContourT) bool {
-	if len(c1) != len(c2) {
-		return false
-	}
-	for i, c1i := range c1 {
-		if c1i != c2[i] {
-			return false
-		}
-	}
-	return true
-}
 
 // Options and derived things
 type OptsT struct {
@@ -422,21 +411,18 @@ func traceContour(imageData *image.NRGBA, width int, start int) ContourT {
 }
 
 func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
-	var contours = make([]ContourT, 1, 10)
+	var contours = make([]ContourT, 0, 10)
 	var imageLen = width * height
 	seen := make([]bool, imageLen)
 	var skipping = false
 	for i := 0; i < imageLen; i++ {
-		//if(imageData.data[i * 4] > threshold) {
-		// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4].
-		if imageData.Pix[i*4] < threshold { // just get R
+		if getPix(imageData, i) < threshold {
 			if seen[i] || skipping {
 				skipping = true
 			} else {
 				var contour = traceContour(imageData, width, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
-				//contour.forEach(c => {
 				fmt.Printf("cF: got contour %v\n", contour)
 				for _, c := range contour {
 					seen[c] = true
