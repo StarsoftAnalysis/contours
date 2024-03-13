@@ -8,6 +8,8 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/slices"
@@ -40,6 +42,8 @@ type OptsT struct {
 	width     int    // TODO ptr to img here instead?
 	height    int    // pixels
 	threshold int
+	margin    float64 // from user
+	paper     string  // from user
 }
 
 var opts OptsT
@@ -117,7 +121,7 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 	contour[0] = start
 	var direction int = 3
 	p := start
-	fmt.Printf("\ntC: width=%v start=%v\n", width, start)
+	//fmt.Printf("\ntC: width=%v start=%v\n", width, start)
 	for true {
 		neighbours, withins := neighboursWithinXY(imageData, width, height, threshold, p)
 		// find the first neighbour starting from
@@ -137,11 +141,11 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 		for i := 0; i < 8; i++ {
 			idx := (i + offset) % 8
 			within := withins[idx]
-			fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
+			//fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
 			if within {
 				direction = idx
 				nextP = neighbours[idx]
-				fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
+				//fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
 				break
 			}
 		}
@@ -197,8 +201,42 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 	return contours
 }
 
+func writeSVG(contours []ContourT) {
+	var svgF SVGfile
+	optString := fmt.Sprintf("-mnc-t%dm%g%s", opts.threshold, opts.margin, opts.paper)
+	ext := filepath.Ext(opts.infile)
+	svgF.openStart(strings.TrimSuffix(opts.infile, ext) + optString + ".svg")
+	for _, contour := range contours {
+		/* Separate lines:
+		var first, to, from int
+		first = contour[0]
+		for i, p := range contour {
+			if i == 0 {
+				// first time
+				to = p
+			} else if i == (len(contour) - 1) {
+				// end, close the loop
+				from = to
+				to = first
+				svgF.line(float64(from%opts.width), float64(from/opts.width), float64(to%opts.width), float64(to/opts.width))
+			} else {
+				from = to
+				to = p
+				svgF.line(float64(from%opts.width), float64(from/opts.width), float64(to%opts.width), float64(to/opts.width))
+			}
+		}
+		*/
+		// Single polygon -- assume the contour is closed
+		// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
+		svgF.polygon(contour, opts.width)
+	}
+	svgF.stopSave()
+}
+
 func parseArgs(args []string) {
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
+	pf.Float64Var(&opts.margin, "margin", 15, "Minimum margin (in mm).")
+	pf.StringVar(&opts.paper, "paper", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
 	pf.IntVarP(&opts.threshold, "threshold", "t", 128, "Threshold: 0..255")
 	pf.SortFlags = false
 	if args == nil {
@@ -225,5 +263,6 @@ func main() {
 	opts.height = height
 	fmt.Printf("options: %#v\n", opts)
 	contours := contourFinder(img, opts.width, opts.height, opts.threshold)
-	fmt.Printf("contours: %#v\n", contours)
+	fmt.Printf("%d contours found\n", len(contours))
+	writeSVG(contours)
 }
