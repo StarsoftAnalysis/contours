@@ -50,7 +50,8 @@ func (svg *SVGfile) polygon(contour ContourT, width int) {
 		y := p / width
 		svg.write(fmt.Sprintf("%d,%d ", x, y))
 	}
-	svg.write(fmt.Sprint("\" fill=\"none\" stroke=\"black\" stroke-width=\"0.1mm\" />\n"))
+	//svg.write(fmt.Sprint("\" fill=\"none\" stroke=\"black\" stroke-width=\"0.1mm\" />\n"))
+	svg.write(fmt.Sprint("\" />\n"))
 }
 
 func (svg *SVGfile) openStart(filename string) {

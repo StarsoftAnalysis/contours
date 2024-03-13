@@ -48,7 +48,8 @@ func TestContourFinder(t *testing.T) {
 		{"examples/test5.png", []ContourT{{9, 10, 11, 12, 13, 14, 22, 30, 38, 46, 54, 53, 52, 51, 50, 49, 41, 33, 25, 17}, {29, 20, 19, 26, 34, 43, 44, 37}}, 2},
 		{"examples/test6.png", []ContourT{{9, 10, 11, 12, 13, 14, 22, 30, 38, 46, 54, 53, 52, 51, 50, 49, 41, 33, 25, 17}}, 1},
 		{"examples/test7.png", []ContourT{{6, 7, 8, 13, 18, 17, 21, 27, 28, 26, 16}}, 1}, // correct answer is {6, 7, 8, 13, 18, 17, 16, 21, 26, 27, 28} -- see the source code
-		{"examples/example.png", nil, 14},
+		{"examples/example.png", nil, 10},
+		{"examples/bottom.png", nil, 659},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)

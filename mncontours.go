@@ -186,6 +186,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 			if seen[i] || skipping {
 				skipping = true
 			} else {
+				//fmt.Printf("cF: starting contour at %d (%d,%d)\n", i, i%width, i/width)
 				var contour = traceContour(imageData, width, height, threshold, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
@@ -193,6 +194,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 				for _, c := range contour {
 					seen[c] = true
 				}
+				skipping = true // experimental!  fixes bug with extra bowties   do some refactoring.
 			}
 		} else {
 			skipping = false
@@ -207,27 +209,7 @@ func writeSVG(contours []ContourT) {
 	ext := filepath.Ext(opts.infile)
 	svgF.openStart(strings.TrimSuffix(opts.infile, ext) + optString + ".svg")
 	for _, contour := range contours {
-		/* Separate lines:
-		var first, to, from int
-		first = contour[0]
-		for i, p := range contour {
-			if i == 0 {
-				// first time
-				to = p
-			} else if i == (len(contour) - 1) {
-				// end, close the loop
-				from = to
-				to = first
-				svgF.line(float64(from%opts.width), float64(from/opts.width), float64(to%opts.width), float64(to/opts.width))
-			} else {
-				from = to
-				to = p
-				svgF.line(float64(from%opts.width), float64(from/opts.width), float64(to%opts.width), float64(to/opts.width))
-			}
-		}
-		*/
 		// Single polygon -- assume the contour is closed
-		// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
 		svgF.polygon(contour, opts.width)
 	}
 	svgF.stopSave()
