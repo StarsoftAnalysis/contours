@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 )
 
 type PointT struct {
@@ -35,16 +36,16 @@ type ContourT []int // PointT
 
 // Options and derived things
 type OptsT struct {
-	infile string // from user
-	width  int    // TODO ptr to img here instead?
-	height int    // pixels
+	infile    string // from user
+	width     int    // TODO ptr to img here instead?
+	height    int    // pixels
+	threshold int
 }
 
 var opts OptsT
 
 const white = 0xff
 const black = 0x00
-const threshold = 0x7f
 
 // Get the pixel value (0..255) at the given offset into the image
 func getPix(imageData *image.NRGBA, i int) int {
@@ -64,7 +65,7 @@ var neighbourOffset = [8]PointT{
 //
 // Cells that are off the edge of the image are returned as false.
 // Properly x,y version:
-func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]int, [8]bool) {
+func neighboursWithinXY(imageData *image.NRGBA, width, height int, threshold int, p int) ([8]int, [8]bool) {
 	var neighbours [8]int
 	var within [8]bool = [8]bool{true, true, true, true, true, true, true, true}
 	px := p % width
@@ -111,14 +112,14 @@ func neighboursWithinXY(imageData *image.NRGBA, width, height int, p int) ([8]in
 	return neighbours, within
 }
 
-func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT {
+func traceContour(imageData *image.NRGBA, width, height int, threshold int, start int) ContourT {
 	contour := make(ContourT, 1, 10)
 	contour[0] = start
 	var direction int = 3
 	p := start
-	//fmt.Printf("\ntC: width=%v start=%v\n", width, start)
+	fmt.Printf("\ntC: width=%v start=%v\n", width, start)
 	for true {
-		neighbours, withins := neighboursWithinXY(imageData, width, height, p)
+		neighbours, withins := neighboursWithinXY(imageData, width, height, threshold, p)
 		// find the first neighbour starting from
 		// the direction we came from
 		var offset int = direction - 3 + 8
@@ -136,16 +137,17 @@ func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT
 		for i := 0; i < 8; i++ {
 			idx := (i + offset) % 8
 			within := withins[idx]
-			//fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
+			fmt.Printf("tC loop: p=%v  offset=%v idx=%v ns=%v ws=%v\n", p, offset, idx, neighbours, withins)
 			if within {
 				direction = idx
 				nextP = neighbours[idx]
-				//fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
+				fmt.Printf("tC: breaking with direction=%v nextP=%v\n", direction, nextP)
 				break
 			}
 		}
 		if nextP > width*height {
-			panic("p's out of range")
+			fmt.Printf("tC: nextP=%v\n", nextP)
+			panic("tC: p's out of range")
 		}
 		if nextP == -1 {
 			// That's normal for a one-pixel shape
@@ -159,13 +161,18 @@ func traceContour(imageData *image.NRGBA, width, height int, start int) ContourT
 		if p == start || p == -1 {
 			break
 		} else {
-			contour = append(contour, p)
+			// On a non-closed single-pixel-width shape such as test7.png, it can
+			// repeat pixels from the other side, so don't add repeats.
+			// FIXME but this still leaves the pixels in a wacky order.
+			if !slices.Contains(contour, p) {
+				contour = append(contour, p)
+			}
 		}
 	}
 	return contour
 }
 
-func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
+func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []ContourT {
 	var contours = make([]ContourT, 0, 10)
 	var imageLen = width * height
 	seen := make([]bool, imageLen)
@@ -175,7 +182,7 @@ func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
 			if seen[i] || skipping {
 				skipping = true
 			} else {
-				var contour = traceContour(imageData, width, height, i)
+				var contour = traceContour(imageData, width, height, threshold, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
 				//fmt.Printf("cF: got contour %v\n", contour)
@@ -192,11 +199,16 @@ func contourFinder(imageData *image.NRGBA, width, height int) []ContourT {
 
 func parseArgs(args []string) {
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
+	pf.IntVarP(&opts.threshold, "threshold", "t", 128, "Threshold: 0..255")
 	pf.SortFlags = false
 	if args == nil {
 		pf.Parse(os.Args[1:]) // don't pass program name
 	} else {
 		pf.Parse(args) // args passed as a string (for testing)
+	}
+	if pf.NArg() < 1 {
+		fmt.Println("No input file name given")
+		os.Exit(1)
 	}
 	opts.infile = pf.Arg(0)
 }
@@ -207,11 +219,11 @@ func main() {
 	img, width, height, err := loadImage(opts.infile)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 	opts.width = width
 	opts.height = height
 	fmt.Printf("options: %#v\n", opts)
-	contours := contourFinder(img, width, height)
+	contours := contourFinder(img, opts.width, opts.height, opts.threshold)
 	fmt.Printf("contours: %#v\n", contours)
 }

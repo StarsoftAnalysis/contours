@@ -9,3 +9,8 @@ It uses Moore-Neighbourhood contour tracing. For more details on the algorithm/a
 
 Forked from [Ben Foxall's project](https://github.com/benfoxall/contours) in March 2024,
 and translated from Javascript to Go.
+
+### Issues
+
+* A non-closed thin shape such as test7.png has to look at the shape from both sides to find the whole contour,
+  but then ends up with repeated pixels or, if those are excluded, pixels out of order.
