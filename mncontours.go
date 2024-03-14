@@ -183,21 +183,15 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 	var skipping = false
 	for i := 0; i < imageLen; i++ {
 		if getPix(imageData, i) < threshold {
-			//if seen[i] || skipping {
-			//	skipping = true
-			//} else {
 			if !seen[i] && !skipping {
-				//fmt.Printf("cF: starting contour at %d (%d,%d)\n", i, i%width, i/width)
 				var contour = traceContour(imageData, width, height, threshold, i)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
-				//fmt.Printf("cF: got contour %v\n", contour)
 				for _, c := range contour {
 					seen[c] = true
 				}
-				//skipping = true // experimental!  fixes bug with extra bowties   do some refactoring.
 			}
-			skipping = true // experimental!  fixes bug with extra bowties   do some refactoring.
+			skipping = true
 		} else {
 			skipping = false
 		}
