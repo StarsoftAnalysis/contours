@@ -47,9 +47,11 @@ func TestContourFinder(t *testing.T) {
 		{"tests/test4.png", []ContourT{{1, 8, 14, 19, 12, 6}, {4, 5, 11, 10}, {22}}, 3},
 		{"tests/test5.png", []ContourT{{9, 10, 11, 12, 13, 14, 22, 30, 38, 46, 54, 53, 52, 51, 50, 49, 41, 33, 25, 17}, {29, 20, 19, 26, 34, 43, 44, 37}}, 2},
 		{"tests/test6.png", []ContourT{{9, 10, 11, 12, 13, 14, 22, 30, 38, 46, 54, 53, 52, 51, 50, 49, 41, 33, 25, 17}}, 1},
-		{"tests/test7.png", []ContourT{{6, 7, 8, 13, 18, 17, 21, 27, 28, 26, 16}}, 1}, // correct answer is {6, 7, 8, 13, 18, 17, 16, 21, 26, 27, 28} -- see the source code
+		// These two have non-closed thin lines -- the contour loops back to close itself:
+		{"tests/test7.png", []ContourT{{6, 7, 8, 13, 18, 17, 21, 27, 28, 27, 26, 21, 16, 17, 13, 7}}, 1},
+		{"tests/test8.png", []ContourT{{10, 11, 12, 13, 14, 15, 16, 15, 14, 13, 12, 11}, {28, 37, 46, 55, 64, 55, 46, 37}, {30, 40, 50, 60, 70, 60, 50, 40}}, 3},
 		{"tests/example.png", nil, 10},
-		{"tests/bottom.png", nil, 659},
+		{"tests/bottom.png", nil, 156},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)

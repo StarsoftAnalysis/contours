@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-	"golang.org/x/exp/slices"
 )
 
 type PointT struct {
@@ -167,12 +166,7 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 		if p == start || p == -1 {
 			break
 		} else {
-			// On a non-closed single-pixel-width shape such as test7.png, it can
-			// repeat pixels from the other side, so don't add repeats.
-			// FIXME but this still leaves the pixels in a wacky order.
-			if !slices.Contains(contour, p) {
-				contour = append(contour, p)
-			}
+			contour = append(contour, p)
 		}
 	}
 	if svgF != nil {
@@ -249,13 +243,10 @@ func main() {
 	svgF.openStart(strings.TrimSuffix(opts.infile, ext)+optString+".svg", opts)
 	for t, threshold := range opts.thresholds {
 		if svgF != nil {
-			svgF.startLayer(t)
+			svgF.layer(t)
 		}
 		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
-		if svgF != nil {
-			svgF.endLayer()
-		}
 	}
 	svgF.stopSave()
 }

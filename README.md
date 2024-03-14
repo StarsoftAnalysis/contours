@@ -35,7 +35,3 @@ Choose the paper size to use.  One of A4L, A4P, A3L, or A3P.  Default A4L. Examp
 
 <img alt="Photo of breakwaters on a beach" src="examples/beach.png" title="Input image" width=45%> <img alt="The same photo after processing, showing as the outlines of shapes" src="examples/beach-mnc-t32,64,96,128,160,192,224m15A4L.svg" title="Created SVG image" width=45%>
 
-### Issues
-
-* A non-closed thin shape such as test7.png has to look at the shape from both sides to find the whole contour,
-  but then ends up with repeated pixels or, if those are excluded, pixels out of order.

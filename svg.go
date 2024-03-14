@@ -97,7 +97,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 
 func (svg *SVGfile) stopSave() {
 	svg.endLayer()
-	svg.write("\n</g>\n\n</svg>\n")
+	svg.write("</g>\n</svg>\n")
 	svg.file.Close()
 	fmt.Printf("Created SVG file %q\n", svg.filename)
 }
@@ -105,7 +105,7 @@ func (svg *SVGfile) stopSave() {
 func (svg *SVGfile) startLayer(l int) {
 	// l will not be 0 (that would plot white lines)
 	//grey := 100 - int(math.Round(opts.penBandwidth*float64(l)*100.0))
-	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d\" stroke=\"rgb(%d%%, %d%%, %d%%)\">", l, black, black, black))
+	svg.write(fmt.Sprintf("<g inkscape:groupmode=\"layer\" inkscape:label=\"%d\" stroke=\"rgb(%d%%, %d%%, %d%%)\">\n", l, black, black, black))
 	svg.currentLayer = l
 }
 func (svg *SVGfile) endLayer() {
