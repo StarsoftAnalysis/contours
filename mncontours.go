@@ -7,6 +7,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,7 +52,10 @@ const black = 0x00
 
 // Get the pixel value (0..255) at the given offset into the image
 func getPix(imageData *image.NRGBA, i int) int {
-	return int(imageData.Pix[i*4]) // For now, just get the red part of the RGBA
+	//return int(imageData.Pix[i*4]) // For now, just get the red part of the RGBA
+	// Get grey:
+	// Y = 0.299 R + 0.587 G + 0.114 B
+	return int(math.Round(0.299*float64(imageData.Pix[i*4]) + 0.587*float64(imageData.Pix[i*4+1]) + 0.114*float64(imageData.Pix[i*4+2])))
 }
 
 var neighbourOffset = [8]PointT{
