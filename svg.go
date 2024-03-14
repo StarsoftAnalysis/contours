@@ -2,8 +2,6 @@
 // Part of mncontours.go
 // Copyright 2023,2024 Chris Dennis
 
-// FIXME is use of opts from here ugly?
-
 package main
 
 import (
@@ -54,7 +52,7 @@ func (svg *SVGfile) polygon(contour ContourT, width int) {
 	svg.write(fmt.Sprint("\" />\n"))
 }
 
-func (svg *SVGfile) openStart(filename string) {
+func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	svg.filename = filename
 	fh, err := os.Create(svg.filename)
 	if err != nil {

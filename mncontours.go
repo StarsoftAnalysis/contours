@@ -46,8 +46,6 @@ type OptsT struct {
 	paper      string  // from user
 }
 
-var opts OptsT
-
 const white = 0xff
 const black = 0x00
 
@@ -210,7 +208,8 @@ func writeSVG(contours []ContourT) {
 }
 */
 
-func parseArgs(args []string) {
+func parseArgs(args []string) OptsT {
+	var opts OptsT
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
 	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
 	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
@@ -226,10 +225,11 @@ func parseArgs(args []string) {
 		os.Exit(1)
 	}
 	opts.infile = pf.Arg(0)
+	return opts
 }
 
 func main() {
-	parseArgs(nil)
+	opts := parseArgs(nil)
 	fmt.Printf("mncontours: processing '%s'\n", opts.infile)
 	img, width, height, err := loadImage(opts.infile)
 	if err != nil {
@@ -242,7 +242,7 @@ func main() {
 	optString := fmt.Sprintf("-mnc-t%sm%g%s", intsToString(opts.thresholds), opts.margin, opts.paper)
 	ext := filepath.Ext(opts.infile)
 	var svgF *SVGfile = new(SVGfile)
-	svgF.openStart(strings.TrimSuffix(opts.infile, ext) + optString + ".svg")
+	svgF.openStart(strings.TrimSuffix(opts.infile, ext)+optString+".svg", opts)
 	for t, threshold := range opts.thresholds {
 		if svgF != nil {
 			svgF.startLayer(t)
