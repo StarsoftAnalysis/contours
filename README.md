@@ -1,5 +1,6 @@
 # Moore-Neighbourhood Contours 
-![example workflow](https://github.com/starsoftanalysis/contours/actions/workflows/WORKFLOW-FILE/badge.svg)
+
+![Go workflow](https://github.com/starsoftanalysis/mncontours/actions/workflows/go.yml/badge.svg)
 
 This is a Go programme for pulling out contours/regions from an image.
 
