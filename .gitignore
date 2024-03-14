@@ -1,4 +1,4 @@
-*.svg
+tests/*.svg
 *~
 # binary:
 mncontours
