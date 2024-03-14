@@ -112,7 +112,7 @@ func (svg *SVGfile) startLayer(l int) {
 }
 func (svg *SVGfile) endLayer() {
 	if svg.currentLayer > 0 {
-		svg.write("</g>i\n") // end of stroke and layer group
+		svg.write("</g>\n") // end of stroke and layer group
 	}
 }
 func (svg *SVGfile) layer(l int) {

@@ -38,12 +38,12 @@ type ContourT []int // PointT
 
 // Options and derived things
 type OptsT struct {
-	infile    string // from user
-	width     int    // TODO ptr to img here instead?
-	height    int    // pixels
-	threshold int
-	margin    float64 // from user
-	paper     string  // from user
+	infile     string // from user
+	width      int    // TODO ptr to img here instead?
+	height     int    // pixels
+	thresholds []int
+	margin     float64 // from user
+	paper      string  // from user
 }
 
 var opts OptsT
@@ -116,7 +116,7 @@ func neighboursWithinXY(imageData *image.NRGBA, width, height int, threshold int
 	return neighbours, within
 }
 
-func traceContour(imageData *image.NRGBA, width, height int, threshold int, start int) ContourT {
+func traceContour(imageData *image.NRGBA, width, height int, threshold int, start int, svgF *SVGfile) ContourT {
 	contour := make(ContourT, 1, 10)
 	contour[0] = start
 	var direction int = 3
@@ -173,10 +173,14 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 			}
 		}
 	}
+	if svgF != nil {
+		// Single polygon -- assume the contour is closed
+		svgF.polygon(contour, width)
+	}
 	return contour
 }
 
-func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []ContourT {
+func contourFinder(imageData *image.NRGBA, width, height int, threshold int, svgF *SVGfile) []ContourT {
 	var contours = make([]ContourT, 0, 10)
 	var imageLen = width * height
 	seen := make([]bool, imageLen)
@@ -184,7 +188,7 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 	for i := 0; i < imageLen; i++ {
 		if getPix(imageData, i) < threshold {
 			if !seen[i] && !skipping {
-				var contour = traceContour(imageData, width, height, threshold, i)
+				contour := traceContour(imageData, width, height, threshold, i, svgF)
 				contours = append(contours, contour)
 				// this could be a _lot_ more efficient
 				for _, c := range contour {
@@ -199,23 +203,18 @@ func contourFinder(imageData *image.NRGBA, width, height int, threshold int) []C
 	return contours
 }
 
+/*
 func writeSVG(contours []ContourT) {
-	var svgF SVGfile
-	optString := fmt.Sprintf("-mnc-t%dm%g%s", opts.threshold, opts.margin, opts.paper)
-	ext := filepath.Ext(opts.infile)
-	svgF.openStart(strings.TrimSuffix(opts.infile, ext) + optString + ".svg")
 	for _, contour := range contours {
-		// Single polygon -- assume the contour is closed
-		svgF.polygon(contour, opts.width)
 	}
-	svgF.stopSave()
 }
+*/
 
 func parseArgs(args []string) {
 	pf := pflag.NewFlagSet("contours", pflag.ExitOnError)
-	pf.Float64Var(&opts.margin, "margin", 15, "Minimum margin (in mm).")
-	pf.StringVar(&opts.paper, "paper", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
-	pf.IntVarP(&opts.threshold, "threshold", "t", 128, "Threshold: 0..255")
+	pf.Float64VarP(&opts.margin, "margin", "m", 15, "Minimum margin (in mm).")
+	pf.StringVarP(&opts.paper, "paper", "p", "A4L", "Paper size and orientation.  A4L | A4P | A3L | A3P.")
+	pf.IntSliceVarP(&opts.thresholds, "threshold", "t", []int{128}, "Threshold levels, each 0..255")
 	pf.SortFlags = false
 	if args == nil {
 		pf.Parse(os.Args[1:]) // don't pass program name
@@ -240,7 +239,19 @@ func main() {
 	opts.width = width
 	opts.height = height
 	fmt.Printf("options: %#v\n", opts)
-	contours := contourFinder(img, opts.width, opts.height, opts.threshold)
-	fmt.Printf("%d contours found\n", len(contours))
-	writeSVG(contours)
+	optString := fmt.Sprintf("-mnc-t%sm%g%s", intsToString(opts.thresholds), opts.margin, opts.paper)
+	ext := filepath.Ext(opts.infile)
+	var svgF *SVGfile = new(SVGfile)
+	svgF.openStart(strings.TrimSuffix(opts.infile, ext) + optString + ".svg")
+	for t, threshold := range opts.thresholds {
+		if svgF != nil {
+			svgF.startLayer(t)
+		}
+		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
+		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
+		if svgF != nil {
+			svgF.endLayer()
+		}
+	}
+	svgF.stopSave()
 }

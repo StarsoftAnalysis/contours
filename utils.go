@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"math"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // loadImage loads the specified image from disk. Supported file types are png and jpg
@@ -96,4 +98,12 @@ func radians(degrees float64) float64 {
 }
 func degrees(radians float64) float64 {
 	return radians * 180 / math.Pi
+}
+
+func intsToString(ints []int) string {
+	strs := make([]string, len(ints))
+	for i, v := range ints {
+		strs[i] = strconv.Itoa(v)
+	}
+	return strings.Join(strs, ",")
 }

@@ -25,7 +25,7 @@ func TestTraceContour(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		got := traceContour(img, width, height, 128, td.start)
+		got := traceContour(img, width, height, 128, td.start, nil)
 		if !reflect.DeepEqual(got, td.contour) {
 			t.Errorf("Wrong result for %s/%v (wanted=%v  got %v)\n", td.infile, td.start, td.contour, got)
 		}
@@ -57,7 +57,7 @@ func TestContourFinder(t *testing.T) {
 		if err != nil {
 			t.Errorf("Input file %s not found\n", td.infile)
 		}
-		got := contourFinder(img, width, height, 128)
+		got := contourFinder(img, width, height, 128, nil)
 		if td.contours == nil {
 			// just count the contours
 			if len(got) != td.count {
