@@ -1,4 +1,4 @@
-module moore-neighbourhood-contours
+module mncontours
 
 go 1.22.0
 
