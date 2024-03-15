@@ -1,5 +1,4 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# Workflow for mncontours
 name: Go
 on:
   push:
@@ -24,3 +23,5 @@ jobs:
       run: go build -v ./...
     - name: Test
       run: go test -v ./...
+    - name: Use
+      run: cd examples && ../mncontours beach.png -t 32,64,96,128,160,192,224
