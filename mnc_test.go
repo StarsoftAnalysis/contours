@@ -75,7 +75,7 @@ func TestContourFinder(t *testing.T) {
 }
 
 func TestCreateSVG(t *testing.T) {
-	fmt.Println("TestSVG")
+	fmt.Println("TestCreateSVG")
 	type testdataT struct {
 		infile     string
 		thresholds []int
@@ -84,13 +84,13 @@ func TestCreateSVG(t *testing.T) {
 		wanted     string
 	}
 	testdata := []testdataT{
-		{"tests/test3.png", []int{128}, 15, "A4L", "<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(2.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polygon points=\"1,0 2,0 2,1 1,2 0,2 0,1 \" />\n<polygon points=\"4,0 5,0 6,0 7,0 7,1 7,2 7,3 7,4 7,5 7,6 7,7 6,7 5,7 4,7 3,7 2,7 1,7 0,7 0,6 0,5 0,4 1,4 2,4 3,3 4,2 4,1 \" />\n<polygon points=\"5,4 5,5 4,5 \" />\n</g>\n</g>\n</svg>\n"},
+		{"tests/test3.png", []int{128}, 15, "A4L", "<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(2.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polygon points=\"1,0 2,0 2,1 1,2 0,2 0,1 \" />\n<polygon points=\"4,0 7,0 7,7 0,7 0,4 2,4 4,2 4,1 \" />\n<polygon points=\"5,4 5,5 4,5 \" />\n</g>\n</g>\n</svg>\n"},
 	}
 	for _, td := range testdata {
 		fmt.Printf("\t%s\n", td.infile)
 		opts := OptsT{infile: td.infile, thresholds: td.thresholds, margin: td.margin, paper: td.paper}
 		svgFilename := createSVG(opts)
-		// read in the output
+		// read back the output
 		bytes, err := os.ReadFile(svgFilename)
 		if err != nil {
 			t.Errorf("Can't read in the SVG file: %s", err)
@@ -98,6 +98,26 @@ func TestCreateSVG(t *testing.T) {
 		got := string(bytes)
 		if got != td.wanted {
 			t.Errorf("Wrong result for %s (wanted '%s'  got '%s')\n", td.infile, td.wanted, got)
+		}
+	}
+}
+
+func TestCompressMoves(t *testing.T) {
+	fmt.Println("TestCompressMoves")
+	type testdataT struct {
+		orig   []int
+		width  int
+		wanted []int
+	}
+	testdata := []testdataT{
+		{[]int{1, 2, 10, 17, 16, 8}, 8, []int{1, 2, 10, 17, 16, 8}}, // no compression
+		{[]int{4, 5, 6, 7, 15, 23, 31, 39, 47, 55, 63, 62, 61, 60, 59, 58, 57, 56, 48, 40, 32, 33, 34, 27, 20, 12}, 8, []int{4, 7, 63, 56, 32, 34, 20, 12}},
+	}
+	for i, td := range testdata {
+		fmt.Printf("\t%d\n", i)
+		got := compressMoves(td.orig, td.width)
+		if !reflect.DeepEqual(got, td.wanted) {
+			t.Errorf("Wrong result for test %d (wanted %v  got %v)\n", i, td.wanted, got)
 		}
 	}
 }

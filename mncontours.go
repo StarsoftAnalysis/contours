@@ -57,6 +57,65 @@ func getPix(imageData *image.NRGBA, i int) int {
 	return int(math.Round(0.299*float64(imageData.Pix[i*4]) + 0.587*float64(imageData.Pix[i*4+1]) + 0.114*float64(imageData.Pix[i*4+2])))
 }
 
+func relAngle(p1, p2 int, width int) float64 {
+	// Calculate the angle from p1 to p2, in radians widdershins.
+	pt1 := PointT{p1 % width, p1 / width}
+	pt2 := PointT{p2 % width, p2 / width}
+	return math.Atan2(float64(pt2.y-pt1.y), float64(pt2.x-pt1.x))
+}
+
+func sameAngle(a1, a2 float64) bool {
+	// Return true if the two angles are close enough
+	return math.Abs(a1-a2) < 0.01
+}
+
+// Simplify a list of moves (between points) by combining consecutive moves
+// in the same direction.
+func compressMoves(moves []int, width int) []int {
+	// moves is a slice of Pix indices.
+	if len(moves) < 3 {
+		return moves
+	}
+	var cmoves = make([]int, 0, len(moves)/2) // optimistic guess on the amount of compression
+	p1 := moves[0]
+	cmoves = append(cmoves, p1)
+	i := 1
+	p2 := moves[i]
+	p3 := moves[i+1] // start the loop about here
+	// calculate angle from one point to the next
+	// (flying_goat.py just used the ratio of the coordinates instead of the actual angles)
+	dir1 := relAngle(p1, p2, width)
+	//fmt.Printf("start: p1=%v  p2=%v  dir1=%f\n", p1, p2, dir1)
+	for i < len(moves)-1 {
+		if p2 == p1 { // ignore non-moves
+			fmt.Printf("cM: superposition ignored at %v\n", p1)
+		} else {
+			dir2 := relAngle(p2, p3, width)
+			//fmt.Printf("\nloop: i=%d  p1=%v  p2=%v  p3=%v  dir1=%f  dir2=%f\n", i, p1, p2, p3, dir1, dir2)
+			if sameAngle(dir1, dir2) {
+				// do nothing?
+				//fmt.Printf("same direction, dropping point %v\n", p2)
+				// p1 and dir1 stay the same
+			} else {
+				// new direction -- add the point to the compressed array
+				//fmt.Printf("new direction, adding point %v\n", p2)
+				cmoves = append(cmoves, p2)
+				p1 = p2
+				dir1 = dir2
+			}
+		}
+		i += 1
+		p2 = p3
+		if i+1 < len(moves) {
+			p3 = moves[i+1]
+		}
+	}
+	// need to add the last move or two
+	cmoves = append(cmoves, moves[i])
+	//fmt.Printf("after loop: i=%d  moves: %v  cmoves: %v\n", i, moves, cmoves)
+	return cmoves
+}
+
 var neighbourOffset = [8]PointT{
 	{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0},
 }
@@ -171,7 +230,8 @@ func traceContour(imageData *image.NRGBA, width, height int, threshold int, star
 	}
 	if svgF != nil {
 		// Single polygon -- assume the contour is closed
-		svgF.polygon(contour, width)
+		ccontour := compressMoves(contour, width)
+		svgF.polygon(ccontour, width)
 	}
 	return contour
 }
@@ -251,6 +311,6 @@ func createSVG(opts OptsT) string {
 func main() {
 	opts := parseArgs(nil)
 	fmt.Printf("mncontours: processing '%s'\n", opts.infile)
-	fmt.Printf("options: %#v\n", opts)
+	//fmt.Printf("options: %#v\n", opts)
 	_ = createSVG(opts)
 }

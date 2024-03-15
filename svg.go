@@ -75,16 +75,16 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	printHeight := paperSizes[opts.paper].height - 2*opts.margin
 	imageAspect := float64(opts.width) / float64(opts.height)
 	printAspect := printWidth / printHeight
-	fmt.Printf("print %g x %g  img %d x %d   pA %g   iA  %g\n", printWidth, printHeight, opts.width, opts.height, printAspect, imageAspect)
+	//fmt.Printf("print %g x %g  img %d x %d   pA %g   iA  %g\n", printWidth, printHeight, opts.width, opts.height, printAspect, imageAspect)
 	var scale, translateX, translateY float64
 	if imageAspect > printAspect {
 		scale = printWidth / float64(opts.width)
-		fmt.Println("scaling width")
+		//fmt.Println("scaling width")
 		translateX = opts.margin
 		translateY = (paperSizes[opts.paper].height - float64(opts.height)*scale) / 2
 	} else {
 		scale = printHeight / float64(opts.height)
-		fmt.Println("scaling height")
+		//fmt.Println("scaling height")
 		translateX = (paperSizes[opts.paper].width - float64(opts.width)*scale) / 2
 		translateY = opts.margin
 	}
