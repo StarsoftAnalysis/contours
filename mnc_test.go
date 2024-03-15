@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -67,8 +68,36 @@ func TestContourFinder(t *testing.T) {
 			}
 		} else {
 			if !reflect.DeepEqual(got, td.contours) {
-				t.Errorf("Wrong result for %s (wanted=%v  got %v)\n", td.infile, td.contours, got)
+				t.Errorf("Wrong result for %s (wanted %v  got %v)\n", td.infile, td.contours, got)
 			}
+		}
+	}
+}
+
+func TestCreateSVG(t *testing.T) {
+	fmt.Println("TestSVG")
+	type testdataT struct {
+		infile     string
+		thresholds []int
+		margin     float64
+		paper      string
+		wanted     string
+	}
+	testdata := []testdataT{
+		{"tests/test3.png", []int{128}, 15, "A4L", "<svg width=\"297mm\" height=\"210mm\" viewBox=\"0 0 297 210\" style=\"background-color:white\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" encoding=\"UTF-8\" >\n<g stroke=\"black\" stroke-width=\"0.1mm\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" transform=\"translate(58.5,15) scale(2.000)\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"1\" stroke=\"rgb(0%, 0%, 0%)\">\n<polygon points=\"1,0 2,0 2,1 1,2 0,2 0,1 \" />\n<polygon points=\"4,0 5,0 6,0 7,0 7,1 7,2 7,3 7,4 7,5 7,6 7,7 6,7 5,7 4,7 3,7 2,7 1,7 0,7 0,6 0,5 0,4 1,4 2,4 3,3 4,2 4,1 \" />\n<polygon points=\"5,4 5,5 4,5 \" />\n</g>\n</g>\n</svg>\n"},
+	}
+	for _, td := range testdata {
+		fmt.Printf("\t%s\n", td.infile)
+		opts := OptsT{infile: td.infile, thresholds: td.thresholds, margin: td.margin, paper: td.paper}
+		svgFilename := createSVG(opts)
+		// read in the output
+		bytes, err := os.ReadFile(svgFilename)
+		if err != nil {
+			t.Errorf("Can't read in the SVG file: %s", err)
+		}
+		got := string(bytes)
+		if got != td.wanted {
+			t.Errorf("Wrong result for %s (wanted '%s'  got '%s')\n", td.infile, td.wanted, got)
 		}
 	}
 }

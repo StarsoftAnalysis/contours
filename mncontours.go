@@ -226,9 +226,8 @@ func parseArgs(args []string) OptsT {
 	return opts
 }
 
-func main() {
-	opts := parseArgs(nil)
-	fmt.Printf("mncontours: processing '%s'\n", opts.infile)
+func createSVG(opts OptsT) string {
+	var svgF *SVGfile = new(SVGfile)
 	img, width, height, err := loadImage(opts.infile)
 	if err != nil {
 		fmt.Println(err)
@@ -236,17 +235,22 @@ func main() {
 	}
 	opts.width = width
 	opts.height = height
-	fmt.Printf("options: %#v\n", opts)
 	optString := fmt.Sprintf("-mnc-t%sm%g%s", intsToString(opts.thresholds), opts.margin, opts.paper)
 	ext := filepath.Ext(opts.infile)
-	var svgF *SVGfile = new(SVGfile)
-	svgF.openStart(strings.TrimSuffix(opts.infile, ext)+optString+".svg", opts)
+	svgFilename := strings.TrimSuffix(opts.infile, ext) + optString + ".svg"
+	svgF.openStart(svgFilename, opts)
 	for t, threshold := range opts.thresholds {
-		if svgF != nil {
-			svgF.layer(t)
-		}
+		svgF.layer(t + 1) // Axidraw layers start at 1, not 0
 		contours := contourFinder(img, opts.width, opts.height, threshold, svgF)
 		fmt.Printf("%d contours found at threshold %d\n", len(contours), threshold)
 	}
 	svgF.stopSave()
+	return svgFilename
+}
+
+func main() {
+	opts := parseArgs(nil)
+	fmt.Printf("mncontours: processing '%s'\n", opts.infile)
+	fmt.Printf("options: %#v\n", opts)
+	_ = createSVG(opts)
 }

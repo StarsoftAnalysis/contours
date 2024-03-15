@@ -41,7 +41,7 @@ func (svg *SVGfile) line(fromX, fromY, toX, toY float64) {
 func (svg *SVGfile) polygon(contour ContourT, width int) {
 	// Single polygon -- assume the contour is closed
 	// e.g.  <polygon points="100,100 150,25 150,75 200,0" fill="none" stroke="black" />
-	svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
+	//svg.write(fmt.Sprintf("<!-- contour: %v -->\n", contour))
 	svg.write(fmt.Sprint("<polygon points=\""))
 	for _, p := range contour {
 		x := p % width
@@ -65,7 +65,7 @@ func (svg *SVGfile) openStart(filename string, opts OptsT) {
 	// (The style seems to be ignored by gThumb)
 	bg := fmt.Sprintf("style=\"background-color:%s\"", "white")
 	xmlns := "xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\""
-	svgAttribute := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s>\n",
+	svgAttribute := fmt.Sprintf("<svg width=\"%gmm\" height=\"%gmm\" %s %s %s encoding=\"UTF-8\" >\n",
 		paperSizes[opts.paper].width, paperSizes[opts.paper].height, viewbox, bg, xmlns)
 	svg.write(svgAttribute)
 

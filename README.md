@@ -16,7 +16,7 @@ and translated from Javascript to Go.
     $ mncontours thingy.png
 
 will create a file called thingy-mnc-t128m15A4L.svg.  The numbers in the output SVG file name indicate
-the default values of the threshold, margin, and paper options.
+the values used for the threshold, margin, and paper options -- in this case, the default values.
 
 ### Options
 
